@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.25)
-project(euclidean_clustering CUDA)
+project(euclidean_clustering LANGUAGES CXX CUDA)
 
 set(CMAKE_CUDA_STANDARD 14)
 
-add_executable(euclidean_clustering main.cu)
+find_package(PCL REQUIRED)
 
-set_target_properties(euclidean_clustering PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON)
+include_directories(${PCL_INCLUDE_DIRS} ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/cuda)
+
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/cuda)
+add_executable(test src/main.cpp)
+
+
+target_link_libraries(test ${PCL_LIBRARIES} cuda_clustering)

@@ -1,0 +1,1 @@
+void cuda_wrapper(int n);
