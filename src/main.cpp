@@ -1,8 +1,7 @@
 #include <iostream>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
-#include "cuda_clustering.cuh"
-
+#include "include/CudaClustering.cuh"
 int main() {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -15,7 +14,7 @@ int main() {
   std::cout << cloud->size() << std::endl;
   CudaClustering<pcl::PointXYZ> clustering;
   clustering.setInputCloud(cloud);
-  clustering.setParams({0.1f});
+  clustering.setParams({0.3f});
   clustering.extract(labels);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud (new pcl::PointCloud<pcl::PointXYZI>);
@@ -27,6 +26,6 @@ int main() {
     p.intensity = labels[i];
     out_cloud->push_back(p);
   }
-  pcl::io::savePCDFile("test_data/output_pc.pcd", *out_cloud);
+  pcl::io::savePCDFile("test_data/test_output.pcd", *out_cloud);
   return 0;
 }
