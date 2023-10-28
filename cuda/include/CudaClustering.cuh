@@ -27,8 +27,9 @@ class CudaClustering {
   ClusterParams params_{};
   std::vector<int> clusters_;
   std::shared_ptr<ClusterCloud> cluster_cloud_;
-  DeviceArray<unsigned> d_labels_list{}; // list of remaining labels
-  Matrix<u_int8_t> d_matrix{};  //adjacency matrix
+  DeviceArray<unsigned> labels_map_{};   // help array L
+  DeviceArray<unsigned> labels_list_{}; // list of remaining labels
+  Matrix<u_int8_t> d_matrix_{};  //adjacency matrix
   size_t submatrix_size_ = 4;  // dimension of submatrix
 
   void initial_clustering();
@@ -42,7 +43,7 @@ class CudaClustering {
 
   void update();
 
-  bool evaluate_layer(std::vector<SubmatrixView<uint8_t>> layer);
+  bool evaluate_layer(std::vector<SubmatrixView<uint8_t>>& layer);
 
   bool evaluate_diagonal_submatrix(MatrixPoint submat_origin);
 

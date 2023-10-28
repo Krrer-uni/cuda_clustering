@@ -23,11 +23,11 @@ template<class MatrixType>
 class SubmatrixView {
  private:
  public:
-  Matrix<MatrixType>* parent_matrix_;
+  Matrix<MatrixType> parent_matrix_;
   MatrixPoint submatrix_origin_;
   unsigned submatrix_step_;
   unsigned submatrix_height_;
-  SubmatrixView(Matrix<MatrixType> *parent_matrix,
+  SubmatrixView(Matrix<MatrixType> parent_matrix,
                 MatrixPoint submatrix_origin,
                 unsigned submatrix_step,
                 unsigned submatrix_height_);
