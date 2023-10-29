@@ -62,9 +62,13 @@ void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clust
 
   int grid_size = std::ceil(((float) cluster_cloud_->size) / BLOCK_SIZE);
   initial_ec<<<grid_size, BLOCK_SIZE>>>(*cluster_cloud_, params_.distance);
+  cudaDeviceSynchronize();
+  cudaCheckError()
 
   build_matrix(*cluster_cloud_, labels_list_, d_matrix_, params_.distance);
-//
+  cudaDeviceSynchronize();
+  cudaCheckError()
+  //
 //  for(int i = 0; i < d_matrix_.matrix_step; i++){
 //    for(int j = 0; j < d_matrix_.matrix_step; j++){
 //      std::cout << (unsigned)d_matrix_.matrix.data[i * d_matrix_.matrix_step + j] << " ";
@@ -84,25 +88,30 @@ void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clust
       auto layer = get_layer(layer_count, is_final_layer);
       layer_count++;
       if(layer.size() == 0)
-        return;
+        break;
       merge_found = merge_found || evaluate_layer(layer);
       if (merge_found) {
         update();
-        continue;
+        break;
       }
       if (is_final_layer) {
         main_loop = false;
-        continue;
+        break;
       }
     }
   }
+
+//  for(auto i = cluster_cloud_->labels; i < cluster_cloud_->labels + cluster_cloud_->size; i++ ){
+//    std::cout << *i << " ";
+//  }
+//  std::cout << std::endl;
 
   size_t labels_data_bytes = cluster_cloud_->size * sizeof(unsigned);
   cudaMemcpy(indices_clusters.data(),
              cluster_cloud_->labels,
              labels_data_bytes,
              cudaMemcpyDeviceToHost);
-
+  cudaDeviceSynchronize();
   if (labels_list_.data != nullptr) {
     cudaFree(&labels_list_.data); // ALLOCATED IN build_matrix()
   }
@@ -184,17 +193,17 @@ bool CudaClustering<PointType>::evaluate_layer(std::vector<SubmatrixView<uint8_t
   cudaMemcpy(d_layer, layer.data(), layer_size, cudaMemcpyHostToDevice);
   cudaDeviceSynchronize();
   cudaCheckError()
-  for(auto i = labels_list_.data; i < labels_list_.data + labels_list_.size; i++ ){
-    std::cout << *i << " ";
-  }
-  std::cout << std::endl;
+//  for(auto i = labels_list_.data; i < labels_list_.data + labels_list_.size; i++ ){
+//    std::cout << *i << " ";
+//  }
+//  std::cout << std::endl;
   MatrixMerge::launchLayerMerge<<<layer.size(),BLOCK_SIZE>>>(d_layer,merge_found,labels_list_);
   cudaDeviceSynchronize();
   cudaCheckError()
-  for(auto i = labels_list_.data; i < labels_list_.data + labels_list_.size; i++ ){
-    std::cout << *i << " ";
-  }
-  std::cout << std::endl;
+//  for(auto i = labels_list_.data; i < labels_list_.data + labels_list_.size; i++ ){
+//    std::cout << *i << " ";
+//  }
+//  std::cout << std::endl;
   cudaFree(d_layer);
   return *merge_found;
 }
@@ -206,7 +215,7 @@ std::vector<SubmatrixView<uint8_t>> CudaClustering<PointType>::get_layer(size_t 
     unsigned y = x - layer_number * BLOCK_SIZE;
     unsigned blockWidth = std::min((size_t) BLOCK_SIZE, labels_list_.size - x);
     unsigned blockHeight = std::min((size_t) BLOCK_SIZE, labels_list_.size - y);
-    layer.emplace_back(d_matrix_, MatrixPoint{x, y}, blockHeight, blockWidth);
+    layer.emplace_back(d_matrix_, MatrixPoint{x, y}, blockWidth, blockHeight);
   }
   if(layer.size() == 1)
     _is_last = true;
@@ -216,12 +225,18 @@ std::vector<SubmatrixView<uint8_t>> CudaClustering<PointType>::get_layer(size_t 
 
 template<class PointType>
 void CudaClustering<PointType>::update() {
-
+//  for(auto i = cluster_cloud_->labels; i < cluster_cloud_->labels + cluster_cloud_->size; i++ ){
+//    std::cout << *i << " ";
+//  }
+  std::cout << std::endl;
   int cloud_grid_size = std::ceil(((float) cluster_cloud_->size) / BLOCK_SIZE);
   Update::mapClusters<<<cloud_grid_size, BLOCK_SIZE>>>(*cluster_cloud_, labels_list_,labels_map_);
   cudaDeviceSynchronize();
   cudaCheckError()
-
+//  for(auto i = cluster_cloud_->labels; i < cluster_cloud_->labels + cluster_cloud_->size; i++ ){
+//    std::cout << *i << " ";
+//  }
+//  std::cout << std::endl;
   size_t labels_pos_data_size = labels_map_.size * sizeof(unsigned);
   cudaMemset(labels_map_.data, 0u, labels_pos_data_size);
   cudaDeviceSynchronize();
@@ -231,9 +246,15 @@ void CudaClustering<PointType>::update() {
   Update::set_label_list<<<label_grid_size,BLOCK_SIZE>>>(labels_list_, labels_map_);
   cudaDeviceSynchronize();
   cudaCheckError()
-
+//  for(auto i = labels_map_.data; i < labels_map_.data + labels_map_.size; i++ ){
+//    std::cout << *i << " ";
+//  }
+//  std::cout << std::endl;
   exclusive_scan(labels_map_);
-
+//  for(auto i = labels_map_.data; i < labels_map_.data + labels_map_.size; i++ ){
+//    std::cout << *i << " ";
+//  }
+//  std::cout << std::endl;
   unsigned unique_clusters = labels_map_.data[labels_map_.size - 1];
   std::cout << "Found " << unique_clusters << " unique labels\n" ;
   DeviceArray<unsigned> labels_list_update{};
@@ -254,6 +275,9 @@ void CudaClustering<PointType>::update() {
   cudaCheckError()
 
   cudaFree(labels_list_.data);
+  cudaDeviceSynchronize();
+  cudaCheckError()
+
   labels_list_ = labels_list_update;
 
   d_matrix_.free();

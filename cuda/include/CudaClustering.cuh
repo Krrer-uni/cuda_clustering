@@ -28,7 +28,7 @@ class CudaClustering {
   std::vector<int> clusters_;
   std::shared_ptr<ClusterCloud> cluster_cloud_;
   DeviceArray<unsigned> labels_map_{};   // help array L
-  DeviceArray<unsigned> labels_list_{}; // list of remaining labels
+  DeviceArray<unsigned> labels_list_{}; // list of remaining labels R
   Matrix<u_int8_t> d_matrix_{};  //adjacency matrix
   size_t submatrix_size_ = 4;  // dimension of submatrix
 

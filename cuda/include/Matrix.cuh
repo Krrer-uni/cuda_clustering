@@ -24,9 +24,9 @@ class SubmatrixView {
  private:
  public:
   Matrix<MatrixType> parent_matrix_;
-  MatrixPoint submatrix_origin_;
-  unsigned submatrix_step_;
-  unsigned submatrix_height_;
+  MatrixPoint origin_;
+  unsigned step_;
+  unsigned height_;
   SubmatrixView(Matrix<MatrixType> parent_matrix,
                 MatrixPoint submatrix_origin,
                 unsigned submatrix_step,

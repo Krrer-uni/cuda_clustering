@@ -34,16 +34,16 @@ SubmatrixView<MatrixType>::SubmatrixView(Matrix<MatrixType> parent_matrix,
                                          MatrixPoint submatrix_origin,
                                          unsigned int submatrix_step,
                                          unsigned int submatrix_height) : parent_matrix_(parent_matrix),
-                                                                          submatrix_origin_(submatrix_origin),
-                                                                          submatrix_step_(submatrix_step),
-                                                                          submatrix_height_(submatrix_height) {
+                                                                          origin_(submatrix_origin),
+                                                                          step_(submatrix_step),
+                                                                          height_(submatrix_height) {
 
 }
 
 template<class MatrixType>
 MatrixType SubmatrixView<MatrixType>::getField(MatrixPoint coordinates) {
-  unsigned x_view = coordinates.x + submatrix_origin_.x;
-  unsigned y_view = coordinates.y * parent_matrix_.matrix_step + submatrix_origin_.y;
+  unsigned x_view = coordinates.x + origin_.x;
+  unsigned y_view = coordinates.y * parent_matrix_.matrix_step + origin_.y;
   if(x_view >= parent_matrix_.matrix_step || y_view >= parent_matrix_.size){
     printf("Out of bound submatrix access");
     return 255;
