@@ -38,7 +38,7 @@ int main() {
     PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
     return (-1);
   }
-  cloud = generatePcGrid(10, 10, 1,1, 1.0, 2.0);
+  cloud = generatePcGrid(10, 10, 2 ,1, 1.0, 2.0);
   std::vector<unsigned> labels(cloud->size());
 
   std::cout << cloud->size() << std::endl;

@@ -16,6 +16,7 @@ template<class MatrixType>
 void Matrix<MatrixType>::allocateMatrix(size_t size) {
   this->free();
   this->size = size;
+  this->matrix_step = std::sqrt(size);
   cudaMallocManaged(&matrix.data,size * sizeof(MatrixType));
   cudaCheckError()
 }

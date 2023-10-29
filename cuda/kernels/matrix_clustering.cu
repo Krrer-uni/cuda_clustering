@@ -1,5 +1,9 @@
+#ifndef EUCLIDEAN_CLUSTERING_MATRIX_KERNEL_CU_
+#define EUCLIDEAN_CLUSTERING_MATRIX_KERNEL_CU_
+
 #define BLOCK_SIZE 16
 #include "kernels/cuda_debug_utills.cu"
+#include "include/CudaClustering.cuh"
 
 __device__ float point_distance(const CudaPoint a, const CudaPoint b) {
   return sqrt((a.x - b.x) * (a.x - b.x) +
@@ -28,30 +32,30 @@ __global__ void initial_ec(ClusterCloud cluster_cloud, float d_th) {
   shared_points[tid] = p;
   labels[tid] = tid;
   __syncthreads();
-  for (int j = 0; j < b - 1; j++) {
-    status[tid] = 0;
-    CudaPoint q = shared_points[j];
-    int cc = labels[tid];  // current label of thread point
-    int rc = labels[j];  // current thread of compared point
-    if (tid > j && point_distance(q, p) < d_th && rc != cc) {
-      status[cc] = 1;
-    }
-    __syncthreads();
-    if (status[cc] == 1) {
-      labels[tid] = rc;
-    }
-    __syncthreads();
-  }
+//  for (int j = 0; j < b - 1; j++) {
+//    status[tid] = 0;
+//    CudaPoint q = shared_points[j];
+//    int cc = labels[tid];  // current label of thread point
+//    int rc = labels[j];  // current thread of compared point
+//    if (tid > j && point_distance(q, p) < d_th && rc != cc) {
+//      status[cc] = 1;
+//    }
+//    __syncthreads();
+//    if (status[cc] == 1) {
+//      labels[tid] = rc;
+//    }
+//    __syncthreads();
+//  }
   cluster_cloud.labels[global_id] = labels[tid] + bid * b;
 }
 
 namespace BuildMatrix {
 
 __global__ void set_array_to_tid(DeviceArray<unsigned> array) {
-  size_t tid = threadIdx.x;
-  if (tid >= array.size)
+  size_t global_id = threadIdx.x + blockIdx.x * blockDim.x;
+  if (global_id >= array.size)
     return;
-  array.data[tid] = tid;
+  array.data[global_id] = global_id;
 }
 
 __global__ void set_label_list(const ClusterCloud cluster_cloud,
@@ -105,7 +109,7 @@ __device__ uint8_t getSubmatField(SubmatrixView<uint8_t> submat, MatrixPoint fie
   unsigned offset_step = submat.submatrix_origin_.x + submat.submatrix_origin_.y * submat.parent_matrix_.matrix_step;
   unsigned field_step = field.x + field.y * submat.parent_matrix_.matrix_step;
   if (field_step + offset_step >= submat.parent_matrix_.size) {
-    printf("Diagonal{%d,%d}: Error accessing (%d,%d)",
+    printf("Submat{%d,%d}: Error accessing (%d,%d)\n",
            submat.submatrix_origin_.x,
            submat.submatrix_origin_.y,
            field.x,
@@ -122,40 +126,39 @@ diagonal(SubmatrixView<uint8_t> submatrix,
          bool *was_merged,
          DeviceArray<unsigned> label_list) {
   unsigned tid = threadIdx.x;
+  bool is_out_of_bound = tid > submatrix.submatrix_step_-1;
 //  print_status(tid,blockIdx.x);
 //  printf("submat_step %d\n",submatrix.submatrix_step_ );
   __shared__ unsigned labels[BLOCK_SIZE];
   __shared__ bool status[BLOCK_SIZE];
+  bool thread_merged = false;
   labels[tid] = tid;
   __syncthreads();
-//  printf("first sync\n");
   for (unsigned j = 0; j < submatrix.submatrix_step_ - 1; j++) {
     status[tid] = false;
     __syncthreads();
-//    printf("first for sync\n");
 
     unsigned cc = labels[tid];  // current label of thread point
     unsigned rc = labels[j];  // current thread of compared point
-//    printf("Got the cc rc (%d, %d)\n",cc, rc);
 
-    uint8_t label_status = getSubmatField(submatrix, {tid, j});
-//    printf("Got the field (%d, %d)\n",tid, j);
+    uint8_t label_status = (is_out_of_bound) ? 0 : getSubmatField(submatrix, {tid, j});
     if (tid > j && label_status == 1 && rc != cc) {
       status[cc] = true;
+//    printf("merge found %d to %d\n",tid,rc);
+
     }
     __syncthreads();
-//    printf("second for sync\n");
 
     if (status[cc]) {
       labels[tid] = rc;
+      thread_merged = true;
       *was_merged = true;
     }
     __syncthreads();
-//    printf("third for sync\n");
-
   }
-  if (tid >= submatrix.submatrix_step_){
-    label_list.data[tid + submatrix.submatrix_origin_.x] = labels[tid];
+  if (thread_merged){
+//    printf("changed %d to %d\n",label_list.data[tid + submatrix.submatrix_origin_.x], labels[tid]+ submatrix.submatrix_origin_.x);
+    label_list.data[tid + submatrix.submatrix_origin_.x] = labels[tid]+ submatrix.submatrix_origin_.x;
   }
 }
 
@@ -193,6 +196,7 @@ __device__ void offdiagonal(SubmatrixView<uint8_t> submatrix,
     __syncthreads();
   }
   if (merged_thread) {
+    printf("changed %d to %d\n",label_list.data[tid + submatrix.submatrix_origin_.x], submat_y + cl - BLOCK_SIZE);
     label_list.data[tid + submat_x] = submat_y + cl - BLOCK_SIZE;
     merged_block = true;
     if(merged_block && tid == 0){}
@@ -203,7 +207,7 @@ __device__ void offdiagonal(SubmatrixView<uint8_t> submatrix,
 __global__ void launchLayerMerge(SubmatrixView<uint8_t> *layer, bool *was_merged, DeviceArray<unsigned> label_list) {
   unsigned tid = threadIdx.x;
   unsigned bid = blockIdx.x;
-  printf("Launched submat {%d, %d}\n", layer[bid].submatrix_origin_.x,layer[bid].submatrix_origin_.y);
+//  printf("Launched submat {%d, %d}\n", layer[bid].submatrix_origin_.x,layer[bid].submatrix_origin_.y);
   if (layer[bid].submatrix_origin_.x == layer[bid].submatrix_origin_.y) {
     diagonal(layer[bid], was_merged, label_list);
   } else {
@@ -256,3 +260,5 @@ __global__ void build_matrix(Matrix<uint8_t> matrix,
   }
 }
 }
+
+#endif //EUCLIDEAN_CLUSTERING_MATRIX_KERNEL_CU_

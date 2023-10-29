@@ -11,6 +11,10 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/cuda)
+add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
+
+
 add_executable(main src/main.cpp)
 
 target_link_libraries(main ${PCL_LIBRARIES} cuda_clustering)
+

@@ -64,6 +64,14 @@ void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clust
   initial_ec<<<grid_size, BLOCK_SIZE>>>(*cluster_cloud_, params_.distance);
 
   build_matrix(*cluster_cloud_, labels_list_, d_matrix_, params_.distance);
+//
+//  for(int i = 0; i < d_matrix_.matrix_step; i++){
+//    for(int j = 0; j < d_matrix_.matrix_step; j++){
+//      std::cout << (unsigned)d_matrix_.matrix.data[i * d_matrix_.matrix_step + j] << " ";
+//    }
+//    std::cout << std::endl;
+//  }
+
 
   bool main_loop = true;
   while (main_loop) {
@@ -87,7 +95,6 @@ void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clust
         continue;
       }
     }
-    break;
   }
 
   size_t labels_data_bytes = cluster_cloud_->size * sizeof(unsigned);
@@ -127,9 +134,7 @@ void CudaClustering<PointType>::build_matrix(ClusterCloud &cluster_cloud,
   cudaCheckError()
 
   exclusive_scan(labels_map_);
-
   cudaCheckError()
-
   // R array allocation
   unsigned unique_clusters = labels_map_.data[labels_map_.size - 1];
   std::cout << "Found " << unique_clusters << " unique labels\n";
@@ -179,11 +184,17 @@ bool CudaClustering<PointType>::evaluate_layer(std::vector<SubmatrixView<uint8_t
   cudaMemcpy(d_layer, layer.data(), layer_size, cudaMemcpyHostToDevice);
   cudaDeviceSynchronize();
   cudaCheckError()
-
+  for(auto i = labels_list_.data; i < labels_list_.data + labels_list_.size; i++ ){
+    std::cout << *i << " ";
+  }
+  std::cout << std::endl;
   MatrixMerge::launchLayerMerge<<<layer.size(),BLOCK_SIZE>>>(d_layer,merge_found,labels_list_);
   cudaDeviceSynchronize();
   cudaCheckError()
-
+  for(auto i = labels_list_.data; i < labels_list_.data + labels_list_.size; i++ ){
+    std::cout << *i << " ";
+  }
+  std::cout << std::endl;
   cudaFree(d_layer);
   return *merge_found;
 }
@@ -222,10 +233,6 @@ void CudaClustering<PointType>::update() {
   cudaCheckError()
 
   exclusive_scan(labels_map_);
-
-  cudaFree(labels_list_.data);
-  cudaDeviceSynchronize();
-  cudaCheckError()
 
   unsigned unique_clusters = labels_map_.data[labels_map_.size - 1];
   std::cout << "Found " << unique_clusters << " unique labels\n" ;
