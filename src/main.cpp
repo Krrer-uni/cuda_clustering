@@ -3,6 +3,9 @@
 #include <pcl/point_types.h>
 #include "include/CudaClustering.cuh"
 #include <pcl/visualization/pcl_visualizer.h>
+#include <chrono>
+#include <pcl/search/kdtree.h>
+#include <pcl/segmentation/extract_clusters.h>
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr generatePcGrid(size_t block_height,
                                                    size_t block_width,
@@ -38,14 +41,31 @@ int main() {
     PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
     return (-1);
   }
-  cloud = generatePcGrid(10, 10, 1 ,1, 1.0, 2.0);
+  cloud = generatePcGrid(11, 11, 100 ,30, 1.0, 2.0);
   std::vector<unsigned> labels(cloud->size());
 
+  auto start = std::chrono::steady_clock::now();
   std::cout << cloud->size() << std::endl;
   CudaClustering<pcl::PointXYZ> clustering;
   clustering.setInputCloud(cloud);
   clustering.setParams({1.3f});
   clustering.extract(labels);
+  auto end = std::chrono::steady_clock::now();
+  std::cout << "Time(ms) = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
+
+  start = std::chrono::steady_clock::now();
+  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+  tree->setInputCloud(cloud);
+  std::vector<pcl::PointIndices> cluster_indices;
+  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+  ec.setClusterTolerance (0.02); // 2cm
+  ec.setMinClusterSize (100);
+  ec.setMaxClusterSize (25000);
+  ec.setSearchMethod (tree);
+  ec.setInputCloud (cloud);
+  ec.extract (cluster_indices);
+  end = std::chrono::steady_clock::now();
+  std::cout << "Time(ms) = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud(new pcl::PointCloud<pcl::PointXYZI>);
   for (int i = 0; i < cloud->size(); i++) {

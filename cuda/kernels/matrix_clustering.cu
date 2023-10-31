@@ -20,7 +20,7 @@ __global__ void initial_ec(ClusterCloud cluster_cloud, float d_th) {
   unsigned bid = blockIdx.x;
   unsigned b_top = min((unsigned)cluster_cloud.size - blockDim.x * blockIdx.x, blockDim.x);
 
-  size_t global_id = tid + bid * blockIdx.x;
+  size_t global_id = tid + bid * blockDim.x;
   CudaPoint p{};
 
   if (global_id < cluster_cloud.size){
@@ -28,23 +28,23 @@ __global__ void initial_ec(ClusterCloud cluster_cloud, float d_th) {
   }
 
   __shared__ CudaPoint shared_points[BLOCK_SIZE];
-  __shared__ int labels[BLOCK_SIZE];
-  __shared__ int status[BLOCK_SIZE];
+  __shared__ unsigned labels[BLOCK_SIZE];
+  __shared__ bool status[BLOCK_SIZE];
   __syncthreads();
 
   shared_points[tid] = p;
   labels[tid] = tid;
   __syncthreads();
   for (int j = 0; j < b_top - 1; j++) {
-    status[tid] = 0;
+    status[tid] = false;
     CudaPoint q = shared_points[j];
-    int cc = labels[tid];  // current label of thread point
-    int rc = labels[j];  // current thread of compared point
+    unsigned cc = labels[tid];  // current label of thread point
+    unsigned rc = labels[j];  // current thread of compared point
     if (tid > j && point_distance(q, p) < d_th && rc != cc) {
-      status[cc] = 1;
+      status[cc] = true;
     }
     __syncthreads();
-    if (status[cc] == 1) {
+    if (status[cc]) {
       labels[tid] = rc;
     }
     __syncthreads();
