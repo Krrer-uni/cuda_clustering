@@ -41,7 +41,7 @@ int main() {
     PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
     return (-1);
   }
-  cloud = generatePcGrid(11, 11, 100 ,30, 1.0, 2.0);
+  cloud = generatePcGrid(10, 10, 15 ,20, 1.0, 2.0);
   std::vector<unsigned> labels(cloud->size());
 
   auto start = std::chrono::steady_clock::now();
@@ -50,7 +50,13 @@ int main() {
   clustering.setInputCloud(cloud);
   clustering.setParams({1.3f});
   clustering.extract(labels);
+
   auto end = std::chrono::steady_clock::now();
+  std::cout << "Time(ms) = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
+  start = std::chrono::steady_clock::now();
+  clustering.setInputCloud(cloud);
+  clustering.extract(labels);
+  end = std::chrono::steady_clock::now();
   std::cout << "Time(ms) = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
 
   start = std::chrono::steady_clock::now();

@@ -8,6 +8,7 @@ struct CudaPoint {
   float x;
   float y;
   float z;
+  float i;
 };
 
 struct ClusterCloud {

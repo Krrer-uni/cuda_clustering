@@ -5,7 +5,9 @@ template<class MatrixType>
 void Matrix<MatrixType>::free() {
   if(matrix.data != nullptr){
     cudaFree(matrix.data);
+    cudaDeviceSynchronize();
     cudaCheckError()
+    matrix.data = nullptr;
   }
 }
 template<class MatrixType>
@@ -14,7 +16,7 @@ bool Matrix<MatrixType>::is_assigned() {
 }
 template<class MatrixType>
 void Matrix<MatrixType>::allocateMatrix(size_t size) {
-  this->free();
+  free();
   this->size = size;
   this->matrix_step = std::sqrt(size);
   cudaMallocManaged(&matrix.data,size * sizeof(MatrixType));

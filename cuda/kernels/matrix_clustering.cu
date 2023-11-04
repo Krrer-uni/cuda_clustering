@@ -1,7 +1,7 @@
 #ifndef EUCLIDEAN_CLUSTERING_MATRIX_KERNEL_CU_
 #define EUCLIDEAN_CLUSTERING_MATRIX_KERNEL_CU_
 
-#define BLOCK_SIZE 16
+#define BLOCK_SIZE 128
 #include "kernels/cuda_debug_utills.cu"
 #include "include/CudaClustering.cuh"
 
