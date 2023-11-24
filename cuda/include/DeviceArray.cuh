@@ -7,5 +7,5 @@ class DeviceArray {
  public:
   std::size_t size;
   T *data;
-
+  void free();
 };

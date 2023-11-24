@@ -2,21 +2,8 @@
 
 #include <pcl/point_cloud.h>
 #include "include/DeviceArray.cuh"
+#include "include/ClusterCloud.cuh"
 #include "Matrix.cuh"
-
-struct CudaPoint {
-  float x;
-  float y;
-  float z;
-  float i;
-};
-
-struct ClusterCloud {
-  size_t size;
-  CudaPoint *points;
-  unsigned *labels;
-};
-
 
 struct ClusterParams {
   double distance;
