@@ -6,23 +6,31 @@
 #define EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_DEVICE_MATRIX_CUH_
 #include "DeviceArray.cuh"
 #include "cuda.h"
-
+/**
+ * 2d coordinates in matrix
+ */
 struct MatrixPoint {
   unsigned x;
   unsigned y;
 };
-
+/**
+ * Class for square matrix for cuda
+ */
 template<class MatrixType>
 class DeviceMatrix {
  public:
   DeviceArray<MatrixType> matrix{};
-  unsigned step;
-  unsigned size;
-  void allocateMatrix(size_t size);
-  void allocateMatrixZero(size_t size);
-  void free();
+  unsigned step;  // matrix width
+  unsigned size;  // width * height
+  void allocateMatrix(size_t size);  // allocate square matrix size * size
+  void allocateMatrixZero(size_t size);  // allocate matrix and write it with zeroes
+  void free();  // free matrix and assign nullptr
 };
 
+/**
+ * Submatrix that's a view of a parent matrix
+ * @tparam MatrixType
+ */
 template<class MatrixType>
 class DeviceSubmatrixView {
  private:

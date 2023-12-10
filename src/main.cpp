@@ -46,7 +46,7 @@ int main() {
   std::vector<std::vector<int>> labels;
 
   std::cout << sizeof(CudaPoint) << " " << sizeof (pcl::PointXYZI) << std::endl;
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 25; i++) {
     std::string filename = "test_data/slalom_debug/output_pc_";
     filename += std::to_string(i) + ".pcd";
     if (pcl::io::loadPCDFile<pcl::PointXYZI>(filename, *cloud) == -1) {
@@ -54,15 +54,15 @@ int main() {
       return (-1);
     }
 //    cloud = generatePcGrid(10,10,i,i,0.1,0.5);
-
     labels.resize(cloud->size());
-    auto start = std::chrono::high_resolution_clock ::now();
+
+    auto start = std::chrono::high_resolution_clock::now();
     std::cout << cloud->size() << std::endl;
     clustering.setInputCloud(cloud);
     clustering.setConfig({0.4f});
     clustering.extract(labels);
-    auto end = std::chrono::high_resolution_clock ::now();
-    std::cout << "Time(ms) = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Time(ms) = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
   }
 
   int k = 0;

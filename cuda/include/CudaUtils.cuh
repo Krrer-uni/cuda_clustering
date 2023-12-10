@@ -5,6 +5,9 @@
 #ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_CUDAUTILS_CUH_
 #define EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_CUDAUTILS_CUH_
 #include "cstdio"
+/**
+ * Macro to check for cuda errors, used after every cuda call
+ */
 #define cudaCheckError() {                                          \
  cudaError_t e=cudaGetLastError();                                 \
  if(e!=cudaSuccess) {                                              \

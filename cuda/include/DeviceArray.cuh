@@ -7,11 +7,18 @@
 #include <cstddef>
 #include <vector>
 
+/**
+ * Array representation for cuda
+ * @tparam T type of elements
+ */
 template<typename T>
 class DeviceArray {
  public:
   std::size_t size;
   T *data;
+  /**
+   * deallocate memory, assign nullptr
+   */
   void free();
 };
 
