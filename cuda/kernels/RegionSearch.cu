@@ -2,7 +2,7 @@
 #include <limits>
 #include "include/CudaUtils.cuh"
 
-void RegionSearch::setCloud(ClusterCloud &cloud) {
+void RegionSearch::setCloud(CudaPointCloud &cloud) {
   _cloud = cloud;
 }
 
@@ -34,7 +34,7 @@ void RegionSearch::build(float threshold) {
 
   minX = minY = minZ = -INFINITY;
   maxX = maxY = maxZ = INFINITY;
-  //TODO determine min/max
+
   auto min = RegionSearch::min();
   auto max = RegionSearch::max();
 
@@ -109,6 +109,6 @@ CudaPoint RegionSearch::max(){
   return output;
 }
 
-RegionSearch::RegionSearch(ClusterCloud &cloud) : _cloud(cloud){
+RegionSearch::RegionSearch(CudaPointCloud &cloud) : _cloud(cloud){
 
 }

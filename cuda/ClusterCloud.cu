@@ -1,10 +1,10 @@
 //
 // Created by krrer on 04.11.23.
 //
-#include "include/ClusterCloud.cuh"
+#include "include/CudaPointCloud.cuh"
 #include "include/CudaUtils.cuh"
 
-void ClusterCloud::free() {
+void CudaPointCloud::free() {
   if(points != nullptr){
     cudaFree(points);
     cudaDeviceSynchronize();

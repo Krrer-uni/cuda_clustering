@@ -1,5 +1,6 @@
 #pragma once
 #include "DeviceArray.cuh"
+#include "cuda.h"
 
 struct MatrixPoint {
   unsigned x;
@@ -7,29 +8,27 @@ struct MatrixPoint {
 };
 
 template<class MatrixType>
-class Matrix {
+class DeviceMatrix {
  public:
   DeviceArray<MatrixType> matrix{};
-  unsigned matrix_step;
+  unsigned step;
   unsigned size;
   void allocateMatrix(size_t size);
   void allocateMatrixZero(size_t size);
-  bool is_assigned();
   void free();
-
 };
 
 template<class MatrixType>
-class SubmatrixView {
+class DeviceSubmatrixView {
  private:
  public:
-  Matrix<MatrixType> parent_matrix_;
+  DeviceMatrix<MatrixType> parent_matrix_;
   MatrixPoint origin_;
   unsigned step_;
   unsigned height_;
-  SubmatrixView(Matrix<MatrixType> parent_matrix,
-                MatrixPoint submatrix_origin,
-                unsigned submatrix_step,
-                unsigned submatrix_height_);
+  DeviceSubmatrixView(DeviceMatrix<MatrixType> parent_matrix,
+                      MatrixPoint submatrix_origin,
+                      unsigned submatrix_step,
+                      unsigned submatrix_height_);
   MatrixType getField(MatrixPoint coordinates);
 };

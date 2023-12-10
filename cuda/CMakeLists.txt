@@ -1,11 +1,11 @@
 find_package(CUDA)
 
-set(CUDA_CLUSTERING_SRC_FILES CudaClustering.cu DeviceArray.cu Matrix.cu
+set(CUDA_CLUSTERING_SRC_FILES CudaClustering.cu DeviceArray.cu DeviceMatrix.cu
         ClusterCloud.cu
         kernels/RegionSearch.cu)
-set(CUDA_CLUSTERING_INC_FILES include/CudaClustering.cuh include/DeviceArray.cuh include/Matrix.cuh
+set(CUDA_CLUSTERING_INC_FILES include/MatrixClustering.cuh include/DeviceArray.cuh include/DeviceMatrix.cuh
         include/CudaUtils.cuh
-        include/ClusterCloud.cuh
+        include/CudaPointCloud.cuh
         include/RegionSearch.cuh)
 
 add_library(cuda_clustering ${CUDA_CLUSTERING_INC_FILES} ${CUDA_CLUSTERING_SRC_FILES})

@@ -1,5 +1,5 @@
-#include "include/CudaClustering.cuh"
-#include "kernels/matrix_clustering.cu"
+#include "include/MatrixClustering.cuh"
+#include "kernels/MatrixClusteringKernels.cu"
 #include "test_interface.cuh"
 #include <pcl/point_types.h>
 

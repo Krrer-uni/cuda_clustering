@@ -4,12 +4,12 @@
 
 #ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGIONSEARCH_CUH_
 #define EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGIONSEARCH_CUH_
-#include "ClusterCloud.cuh"
+#include "CudaPointCloud.cuh"
 #include "DeviceArray.cuh"
 
 class RegionSearch{
  private:
-  ClusterCloud& _cloud;
+  CudaPointCloud& _cloud;
   DeviceArray<unsigned> _pid;
   DeviceArray<unsigned> _V;
   DeviceArray<unsigned> _S;
@@ -17,8 +17,8 @@ class RegionSearch{
   CudaPoint max();
   size_t block_size_ = 128;
  public:
-  RegionSearch(ClusterCloud& cloud);
-  void setCloud(ClusterCloud& cloud);
+  RegionSearch(CudaPointCloud& cloud);
+  void setCloud(CudaPointCloud& cloud);
   void build(float threshold);
 
   void find();

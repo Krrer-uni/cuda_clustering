@@ -1,31 +1,31 @@
-#include "include/CudaClustering.cuh"
-#include "kernels/matrix_clustering.cu"
+#include "include/MatrixClustering.cuh"
+#include "kernels/MatrixClusteringKernels.cu"
 #include "include/CudaUtils.cuh"
 #include "include/RegionSearch.cuh"
 #include <pcl/point_types.h>
 #include <cmath>
 #include <thrust/scan.h>
 template<class PointType>
-CudaClustering<PointType>::CudaClustering() {
-  cluster_cloud_ = std::make_shared<ClusterCloud>();
+MatrixClustering<PointType>::MatrixClustering() {
+  cluster_cloud_ = std::make_shared<CudaPointCloud>();
   cudaMalloc(&cluster_cloud_->points,12000);
   cluster_cloud_->free();
 }
 
 template<class PointType>
-CudaClustering<PointType>::~CudaClustering() {
+MatrixClustering<PointType>::~MatrixClustering() {
   cluster_cloud_->free();
   labels_map_.free();
   labels_list_.free();
 }
 
 template<class PointType>
-void CudaClustering<PointType>::setParams(ClusterParams params) {
-  this->params_ = params;
+void MatrixClustering<PointType>::setConfig(ClusteringConfig config) {
+  this->config_ = config;
 }
 
 template<class PointType>
-void CudaClustering<PointType>::setInputCloud(typename pcl::PointCloud<PointType>::Ptr input_cloud) {
+void MatrixClustering<PointType>::setInputCloud(typename pcl::PointCloud<PointType>::Ptr input_cloud) {
   if (input_cloud == nullptr) {
     return;
   }
@@ -40,22 +40,24 @@ void CudaClustering<PointType>::setInputCloud(typename pcl::PointCloud<PointType
   cudaMallocManaged(&cluster_cloud_->labels, labels_data_bytes);
   cudaDeviceSynchronize();
   cudaCheckError()
-  cudaMemcpyAsync(cluster_cloud_->points,input_cloud->points.data(),input_cloud->size() * sizeof(PointType),cudaMemcpyHostToDevice);
-  cudaDeviceSynchronize();
+  int j = 0;
+  for(const auto &p : input_cloud->points){
+    cluster_cloud_->points[j] = CudaPoint(p);
+    j++;
+  }
 }
-
 template<class PointType>
-void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clusters) {
+void MatrixClustering<PointType>::extract(std::vector<std::vector<int>> &indices_clusters) {
 
   // WARNING DATA ALLOCATED IN build_matrix()
   int grid_size = std::ceil(((float) cluster_cloud_->size) / BLOCK_SIZE);
-  initial_ec<<<grid_size, BLOCK_SIZE>>>(*cluster_cloud_, params_.distance);
+  initial_ec<<<grid_size, BLOCK_SIZE>>>(*cluster_cloud_, config_.distance);
   cudaDeviceSynchronize();
   cudaCheckError()
 
   RegionSearch region_search(*cluster_cloud_);
   region_search.build(2.0);
-  build_matrix(*cluster_cloud_, labels_list_, d_matrix_, params_.distance);
+  build_matrix(*cluster_cloud_, labels_list_, d_matrix_, config_.distance);
   cudaDeviceSynchronize();
   cudaCheckError()
 
@@ -66,13 +68,12 @@ void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clust
     bool is_final_layer = false;
     unsigned layer_count = 0;
 
-    while (!merge_found) {
+    while (true) {
       auto layer = get_layer(layer_count, is_final_layer);
       layer_count++;
       if(layer.size() == 0)
         break;
-      merge_found = merge_found || evaluate_layer(layer);
-      if (merge_found) {
+      if (evaluate_layer(layer)) {
         update();
         break;
       }
@@ -83,17 +84,14 @@ void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clust
     }
   }
   update();
-
-  size_t labels_data_bytes = cluster_cloud_->size * sizeof(unsigned);
-  if(indices_clusters.size() < cluster_cloud_->size){
-    std::cout << "insufficient size of output vector\n";
+//  std::cout << "number of labels: " << labels_list_.size << std::endl;
+  indices_clusters.clear();
+  indices_clusters.resize(labels_list_.size);
+  for (size_t p = 0; p < cluster_cloud_->size; p++) {
+    unsigned cl = cluster_cloud_->labels[p];
+    indices_clusters[cl].push_back(p);
   }
-  cudaMemcpy(indices_clusters.data(),
-             cluster_cloud_->labels,
-             labels_data_bytes,
-             cudaMemcpyDeviceToHost);
-  cudaDeviceSynchronize();
-  cudaCheckError()
+
 
   labels_list_.free();
   labels_map_.free();
@@ -101,10 +99,10 @@ void CudaClustering<PointType>::extract(std::vector<unsigned int> &indices_clust
 }
 
 template<class PointType>
-void CudaClustering<PointType>::build_matrix(ClusterCloud &cluster_cloud,
-                                             DeviceArray<unsigned int> &labels_list,
-                                             Matrix<uint8_t> &matrix,
-                                             const float d_th) {
+void MatrixClustering<PointType>::build_matrix(CudaPointCloud &cluster_cloud,
+                                               DeviceArray<unsigned int> &labels_list,
+                                               DeviceMatrix<uint8_t> &matrix,
+                                               const float d_th) {
   labels_list.free();
   labels_map_.free();
 
@@ -153,29 +151,20 @@ void CudaClustering<PointType>::build_matrix(ClusterCloud &cluster_cloud,
   cudaCheckError()
 }
 
-
+/**
+ * Evaluate a layer of matrix
+ * @tparam PointType Point type of input cloud
+ * @param layer vector of submatricies belonging to one layer
+ * @return true if a merged occurred, false otherwise
+ */
 template<class PointType>
-void CudaClustering<PointType>::exclusive_scan(DeviceArray<unsigned> &array) {
-  if(array.size == 0){
-    return;
-  }
-  unsigned last_elem = array.data[0];
-
-  array.data[0] = 0;
-  for (size_t i = 1; i < array.size; i++) {
-    unsigned tmp = array.data[i];
-    array.data[i] = last_elem + array.data[i - 1];
-    last_elem = tmp;
-  }
-}
-
-template<class PointType>
-bool CudaClustering<PointType>::evaluate_layer(std::vector<SubmatrixView<uint8_t>>& layer) {
-  bool* merge_found;
+bool MatrixClustering<PointType>::evaluate_layer(std::vector<DeviceSubmatrixView<uint8_t>>& layer) {
+  bool* merge_found;  // variable in managed memory
   cudaMallocManaged(&merge_found,sizeof merge_found);
   *merge_found = false;
-  SubmatrixView<uint8_t>* d_layer;
-  size_t layer_size = layer.size() * sizeof(SubmatrixView<uint8_t>) ;
+  // allocate and copy submatrices to device memeory
+  DeviceSubmatrixView<uint8_t>* d_layer;
+  size_t layer_size = layer.size() * sizeof(DeviceSubmatrixView<uint8_t>) ;
   cudaMallocManaged(&d_layer, layer_size);
   cudaMemcpy(d_layer, layer.data(), layer_size, cudaMemcpyHostToDevice);
   cudaDeviceSynchronize();
@@ -190,10 +179,16 @@ bool CudaClustering<PointType>::evaluate_layer(std::vector<SubmatrixView<uint8_t
   cudaCheckError()
   return *merge_found;
 }
-
+/**
+ *  Function to get submatrices of a layer
+ * @tparam PointType Point type of input cloud
+ * @param layer_number index of a layer
+ * @param _is_last idicator if the returned layer is the last one
+ * @return vector of submatricies belonging to one layer
+ */
 template<class PointType>
-std::vector<SubmatrixView<uint8_t>> CudaClustering<PointType>::get_layer(size_t layer_number, bool &_is_last) {
-  std::vector<SubmatrixView<uint8_t>> layer{};
+std::vector<DeviceSubmatrixView<uint8_t>> MatrixClustering<PointType>::get_layer(size_t layer_number, bool &_is_last) {
+  std::vector<DeviceSubmatrixView<uint8_t>> layer{};
   for (unsigned x = layer_number * BLOCK_SIZE; x < labels_list_.size; x += BLOCK_SIZE) {
     unsigned y = x - layer_number * BLOCK_SIZE;
     unsigned blockWidth = std::min((size_t) BLOCK_SIZE, labels_list_.size - x);
@@ -207,7 +202,7 @@ std::vector<SubmatrixView<uint8_t>> CudaClustering<PointType>::get_layer(size_t 
 
 
 template<class PointType>
-void CudaClustering<PointType>::update() {
+void MatrixClustering<PointType>::update() {
   int cloud_grid_size = std::ceil(((float) cluster_cloud_->size) / BLOCK_SIZE);
   Update::mapClusters<<<cloud_grid_size, BLOCK_SIZE>>>(*cluster_cloud_, labels_list_,labels_map_);
   cudaDeviceSynchronize();
@@ -235,7 +230,7 @@ void CudaClustering<PointType>::update() {
   cudaDeviceSynchronize();
   cudaCheckError()
 
-  Matrix<uint8_t> matrix_update{};
+  DeviceMatrix<uint8_t> matrix_update{};
   matrix_update.allocateMatrixZero(unique_clusters * unique_clusters);
 
   Update::build_matrix<<<label_grid_size, BLOCK_SIZE>>>(d_matrix_,matrix_update,labels_list_,labels_map_);
@@ -253,7 +248,7 @@ void CudaClustering<PointType>::update() {
  * declarations of used templates
  */
 template
-class CudaClustering<pcl::PointXYZ>;
+class MatrixClustering<pcl::PointXYZ>;
 
 template
-class CudaClustering<pcl::PointXYZI>;
+class MatrixClustering<pcl::PointXYZI>;
