@@ -1,9 +1,12 @@
+//
+// Created by Wojciech Rymer on 04.11.23.
+//
 #include "include/DeviceArray.cuh"
 #include "include/CudaUtils.cuh"
 
 template<typename T>
 void DeviceArray<T>::free() {
-  if(data != nullptr){
+  if (data != nullptr) {
     cudaFree(data);
     cudaDeviceSynchronize();
     cudaCheckError()
@@ -11,4 +14,5 @@ void DeviceArray<T>::free() {
   }
 }
 
-template class DeviceArray<unsigned>;
+template
+class DeviceArray<unsigned>;

@@ -1,3 +1,6 @@
+//
+// Created by Wojciech Rymer on 04.11.23.
+//
 #include "include/MatrixClustering.cuh"
 #include "kernels/MatrixClusteringKernels.cu"
 #include "include/CudaUtils.cuh"

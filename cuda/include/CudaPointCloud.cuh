@@ -1,5 +1,5 @@
 //
-// Created by krrer on 04.11.23.
+// Created by Wojciech Rymer on 04.11.23.
 //
 
 #ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_CUDAPOINTCLOUD_CUH_
@@ -10,9 +10,9 @@ struct CudaPoint {
   float y;
   float z;
   float i;
-  CudaPoint()=default;
-  CudaPoint(pcl::PointXYZ p) : x(p.x), y(p.y), z(p.z){};
-  CudaPoint(pcl::PointXYZI p) : x(p.x), y(p.y), z(p.z), i(p.intensity){};
+  CudaPoint() = default;
+  CudaPoint(pcl::PointXYZ p) : x(p.x), y(p.y), z(p.z) {};
+  CudaPoint(pcl::PointXYZI p) : x(p.x), y(p.y), z(p.z), i(p.intensity) {};
 };
 
 class CudaPointCloud {

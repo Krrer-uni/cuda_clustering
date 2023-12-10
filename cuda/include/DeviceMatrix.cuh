@@ -1,4 +1,9 @@
-#pragma once
+//
+// Created by Wojciech Rymer on 04.11.23.
+//
+
+#ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_DEVICE_MATRIX_CUH_
+#define EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_DEVICE_MATRIX_CUH_
 #include "DeviceArray.cuh"
 #include "cuda.h"
 
@@ -32,3 +37,5 @@ class DeviceSubmatrixView {
                       unsigned submatrix_height_);
   MatrixType getField(MatrixPoint coordinates);
 };
+
+#endif  // EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_DEVICE_MATRIX_CUH_

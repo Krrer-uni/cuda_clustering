@@ -1,5 +1,9 @@
-#pragma once
+//
+// Created by Wojciech Rymer on 04.11.23.
+//
 
+#ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_MATRIX_CLUSTERING_CUH_
+#define EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_MATRIX_CLUSTERING_CUH_
 #include <pcl/point_cloud.h>
 #include "include/DeviceArray.cuh"
 #include "include/CudaPointCloud.cuh"
@@ -26,7 +30,7 @@ class MatrixClustering {
 
   void update();
 
-  bool evaluate_layer(std::vector<DeviceSubmatrixView<uint8_t>>& layer);
+  bool evaluate_layer(std::vector<DeviceSubmatrixView<uint8_t>> &layer);
 
   /**
    * Get layers of the matrix
@@ -45,3 +49,5 @@ class MatrixClustering {
 
   void extract(std::vector<std::vector<int>> &indices_clusters);
 };
+
+#endif  // EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_MATRIX_CLUSTERING_CUH_

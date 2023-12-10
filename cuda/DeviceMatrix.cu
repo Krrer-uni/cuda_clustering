@@ -1,3 +1,6 @@
+//
+// Created by Wojciech Rymer on 04.11.23.
+//
 #include "include/DeviceMatrix.cuh"
 #include "include/CudaUtils.cuh"
 #include <cstdint>

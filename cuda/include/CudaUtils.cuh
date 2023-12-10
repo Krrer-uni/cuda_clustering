@@ -1,5 +1,5 @@
 //
-// Created by krrer on 08.10.23.
+// Created by Wojciech Rymer on 08.10.23.
 //
 
 #ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_CUDAUTILS_CUH_

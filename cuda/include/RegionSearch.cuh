@@ -1,15 +1,15 @@
 //
-// Created by krrer on 04.11.23.
+// Created by Wojciech Rymer on 04.11.23.
 //
 
-#ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGIONSEARCH_CUH_
-#define EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGIONSEARCH_CUH_
+#ifndef EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGION_SEARCH_CUH_
+#define EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGION_SEARCH_CUH_
 #include "CudaPointCloud.cuh"
 #include "DeviceArray.cuh"
 
-class RegionSearch{
+class RegionSearch {
  private:
-  CudaPointCloud& _cloud;
+  CudaPointCloud &_cloud;
   DeviceArray<unsigned> _pid;
   DeviceArray<unsigned> _V;
   DeviceArray<unsigned> _S;
@@ -17,11 +17,11 @@ class RegionSearch{
   CudaPoint max();
   size_t block_size_ = 128;
  public:
-  RegionSearch(CudaPointCloud& cloud);
-  void setCloud(CudaPointCloud& cloud);
+  RegionSearch(CudaPointCloud &cloud);
+  void setCloud(CudaPointCloud &cloud);
   void build(float threshold);
 
   void find();
 };
 
-#endif //EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGIONSEARCH_CUH_
+#endif //EUCLIDEAN_CLUSTERING_CUDA_INCLUDE_REGION_SEARCH_CUH_
